@@ -41,6 +41,14 @@ docker compose --profile full up -d
 - Workflow v3 (OpenAI): `services/vaucher-to-pdf/docs/n8n/RESERVAS-v3-openai-import.json`
 - [Guía de migración](services/vaucher-to-pdf/docs/n8n/N8N_MIGRACION_OPENAI.md)
 
+## Subir a GitHub
+
+```bash
+./scripts/push-to-github.sh
+```
+
+La primera vez abrirá el navegador para autenticarte con GitHub (gh auth login). Luego crea el repo y sube el código.
+
 ## Documentación
 
 - [Arquitectura OpenAI + Docker](ARQUITECTURA_OPENAI_DOCKER.md)
