@@ -11,9 +11,9 @@ if ! gh auth status &>/dev/null; then
 fi
 
 echo "Creando repositorio y subiendo..."
-gh repo create eddyrodriguez/auto-vaucher --public --source=. --remote=origin --push 2>/dev/null || {
-  echo "El repo ya existe o hay un error. Intentando push..."
-  git push -u origin main
+gh repo create eddy93rc/Vaucher-to-PDF --public --source=. --remote=origin --push 2>/dev/null || {
+  echo "Intentando push..."
+  GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" git push -u origin main
 }
 
-echo "✓ Listo: https://github.com/eddyrodriguez/auto-vaucher"
+echo "✓ Listo: https://github.com/eddy93rc/Vaucher-to-PDF"
