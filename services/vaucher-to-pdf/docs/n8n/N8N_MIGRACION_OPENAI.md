@@ -16,7 +16,7 @@ Esta guía explica cómo migrar el workflow de Parseur al servicio pdf-extractor
 
 ## Workflow RESERVAS-v3
 
-Importar `RESERVAS-v3-openai-import.json` en n8n.
+Importar `services/vaucher-to-pdf/docs/n8n/RESERVAS-v3-openai-import.json` en n8n.
 
 ### Flujo
 

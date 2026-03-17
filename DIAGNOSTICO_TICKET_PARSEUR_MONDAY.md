@@ -55,7 +55,7 @@ body.segments = [{ flight_number, origin_code, destination_code, departure_date,
 
 | Problema | Causa | Verificación |
 |----------|-------|--------------|
-| `passengers` vacío o ausente | La tabla **passengers** no está configurada en el buzón (error 409 API → añadir manualmente) | Ver [PARSEUR_PASSENGERS_MANUAL.md](Vaucher-to-PDF/docs/setup/PARSEUR_PASSENGERS_MANUAL.md) |
+| `passengers` vacío o ausente | La tabla **passengers** no está configurada en el buzón (error 409 API → añadir manualmente) | Ver [PARSEUR_PASSENGERS_MANUAL.md](services/vaucher-to-pdf/docs/setup/PARSEUR_PASSENGERS_MANUAL.md) |
 | `segments` con datos incompletos | La tabla segments no tiene todas las columnas o la IA no las extrae bien | Revisar en app.parseur.com → Campos → tabla segments |
 | `seat_assignments` vacío | El ticket usa "ASIENTO: 03A CONFIRMADO POR DIAZ CONTRERAS/ANA" (formato inverso). Parseur debe generar `DIAZCONTRERAS/ANAALEXANDRA=03A` | Probar con un ticket y ver el JSON del webhook |
 | `departure_time` / `arrival_time` vacíos | Columnas con tipo TIME; la IA debe extraer "21:10" de "01 JUN 21:10" | Revisar salida de Parseur |

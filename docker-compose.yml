@@ -8,7 +8,7 @@
 
 services:
   pdf-extractor:
-    build: ./pdf-extractor
+    build: ./services/pdf-extractor
     ports:
       - "9120:9120"
     environment:
@@ -26,7 +26,7 @@ services:
 
   # Vaucher-to-PDF (genera el PDF del voucher desde datos Monday)
   vaucher-to-pdf:
-    build: ./Vaucher-to-PDF
+    build: ./services/vaucher-to-pdf
     ports:
       - "9110:9110"
     environment:
