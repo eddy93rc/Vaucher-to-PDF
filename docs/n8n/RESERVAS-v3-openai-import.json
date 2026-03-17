@@ -157,7 +157,7 @@
         "endpoint": "https://api.monday.com/v2/",
         "requestFormat": "json",
         "query": "query GetItemColValue($itemIds: [ID!]!, $colIds: [String!]!) {\n  items(ids: $itemIds) {\n    column_values(ids: $colIds) {\n      id\n      value\n    }\n  }\n}",
-        "variables": "={{ {\n  itemIds: [ String($('Webhook1').item.json.body.event.pulseId) ],\n  colIds: [ 'file_mm1b99xs' ]\n} }}",
+        "variables": "={{ {\n  itemIds: [ String($('Webhook1').item.json.body.event.pulseId) ],\n  colIds: [ 'file_mm1hzrw2' ]\n} }}",
         "operationName": "GetItemColValue",
         "headerParametersUi": {
           "parameter": [
@@ -344,9 +344,18 @@
       "parameters": {
         "method": "POST",
         "url": "http://10.10.12.33:9110/render-voucher-by-pulse?upload=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { pulse_id: String($json.monday_pulse_id || $json.body?.pulse_id || $json.body?.item_id || $json.body?.event?.pulseId || \"\") } }}",
+        "jsonBody": "={{ { pulse_id: String($('Webhook').item.json.body?.event?.pulseId || $json.monday_pulse_id || $json.body?.event?.pulseId || $json.body?.pulse_id || $json.body?.item_id || \"\") } }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -394,7 +403,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ {\n  query: \"mutation CreateSubitem($parentItemId: ID!, $itemName: String!, $columnValues: JSON!) { create_subitem(parent_item_id: $parentItemId, item_name: $itemName, column_values: $columnValues) { id board { id } } }\",\n  variables: {\n    parentItemId: String($('Extraer Datos').item.json.monday_pulse_id),\n    itemName: `${$json.segment_number || \"\"} - ${$json.flight_number || \"\"} - ${$json.origin_code || \"\"}/${$json.destination_code || \"\"}`,\n    columnValues: JSON.stringify(Object.fromEntries(Object.entries({\n      numeric_mm1bn62n: $json.segment_number ? Number($json.segment_number) : undefined,\n      date_mm1bdr4b: $json.voucher_heading_date ? { date: $json.voucher_heading_date } : undefined,\n      text_mm1b2khv: $json.voucher_heading_destination || '',\n      color_mm1bj7np: $json.voucher_trip_type ? { label: $json.voucher_trip_type } : undefined,\n      text_mm1bs18h: $json.flight_number || '',\n      text_mm1g7rg: $json.marketing_airline || '',\n      text_mm1bdzkw: $json.operated_by || '',\n      text_mm1ber8k: $json.origin_code || '',\n      text_mm1b7ra3: $json.origin_name || '',\n      text_mm1gaa33: $json.origin_city || '',\n      text_mm1byh8c: $json.origin_terminal || '',\n      text_mm1bc24j: $json.destination_code || '',\n      text_mm1bqsgh: $json.destination_name || '',\n      text_mm1gkxb5: $json.destination_city || '',\n      text_mm1b8xev: $json.destination_terminal || '',\n      date_mm1bhq59: $json.departure_date ? { date: $json.departure_date } : undefined,\n      text_mm1bggg: $json.departure_time || '',\n      date_mm1b8wej: $json.arrival_date ? { date: $json.arrival_date } : undefined,\n      text_mm1bhp08: $json.arrival_time || '',\n      text_mm1c8jse: $json.salida_llegada || '',\n      text_mm1bg1g3: $json.duration || '',\n      text_mm1bp2sm: $json.travel_class || '',\n      color_mm1b3vt0: $json.booking_status ? { label: ($json.booking_status === 'OK' ? 'Confirmado' : $json.booking_status) } : undefined,\n      text_mm1b9824: $json.baggage || '',\n      text_mm1bdxdz: $json.fare_basis || '',\n      text_mm1bevde: $json.ticket_number || '',\n      text_mm1bhvz6: $json.seat || '-',\n      long_text_mm1gwerx: ($json.seat_assignments && String($json.seat_assignments).trim()) ? { text: $json.seat_assignments } : undefined\n    }).filter(([_, v]) => v !== undefined)))\n  }\n} }}",
+        "jsonBody": "={{ {\n  query: \"mutation CreateSubitem($parentItemId: ID!, $itemName: String!, $columnValues: JSON!) { create_subitem(parent_item_id: $parentItemId, item_name: $itemName, column_values: $columnValues) { id board { id } } }\",\n  variables: {\n    parentItemId: String($('Extraer Datos').item.json.monday_pulse_id),\n    itemName: `${$json.segment_number || \"\"} - ${$json.flight_number || \"\"} - ${$json.origin_code || \"\"}/${$json.destination_code || \"\"}`,\n    columnValues: JSON.stringify(Object.fromEntries(Object.entries({\n      numeric_mm1hb425: $json.segment_number ? Number($json.segment_number) : undefined,\n      date_mm1han5w: $json.voucher_heading_date ? { date: $json.voucher_heading_date } : undefined,\n      text_mm1hqxn5: $json.voucher_heading_destination || '',\n      color_mm1hpswz: $json.voucher_trip_type ? { label: $json.voucher_trip_type } : undefined,\n      text_mm1hzm3v: $json.flight_number || '',\n      text_mm1h8v9y: $json.marketing_airline || '',\n      text_mm1hef1q: $json.operated_by || '',\n      text_mm1hxyb7: $json.origin_code || '',\n      text_mm1hkx1y: $json.origin_name || '',\n      text_mm1h6n0s: $json.origin_city || '',\n      text_mm1hqczm: $json.origin_terminal || '',\n      text_mm1h7rxx: $json.destination_code || '',\n      text_mm1hqc6v: $json.destination_name || '',\n      text_mm1hrhf7: $json.destination_city || '',\n      text_mm1hn6g5: $json.destination_terminal || '',\n      date_mm1hb3qe: $json.departure_date ? { date: $json.departure_date } : undefined,\n      text_mm1hbseg: $json.departure_time || '',\n      date_mm1hjj7e: $json.arrival_date ? { date: $json.arrival_date } : undefined,\n      text_mm1hb0sq: $json.arrival_time || '',\n      text_mm1he8tg: $json.salida_llegada || '',\n      text_mm1hmb1a: $json.duration || '',\n      text_mm1hq71s: $json.travel_class || '',\n      color_mm1hne1b: $json.booking_status ? { label: (() => { const v = String($json.booking_status || '').toLowerCase(); const map = { ok: 'Confirmado', confirmado: 'Confirmado', pendiente: 'Pendiente', cancelado: 'Cancelado', cambiado: 'Cambiado' }; return map[v] || 'Confirmado'; })() } : undefined,\n      text_mm1hzhq6: $json.baggage || '',\n      text_mm1hwrt9: $json.fare_basis || '',\n      text_mm1h94ne: $json.ticket_number || '',\n      text_mm1ha8fn: $json.seat || '-',\n      long_text_mm1h4jjb: ($json.seat_assignments && String($json.seat_assignments).trim()) ? { text: $json.seat_assignments } : undefined\n    }).filter(([_, v]) => v !== undefined)))\n  }\n} }}",
         "options": {}
       },
       "id": "e2808d5a-6c11-43b4-b646-a5cf6127daba",
@@ -527,26 +536,34 @@
     },
     {
       "parameters": {
-        "resource": "boardItem",
-        "operation": "changeMultipleColumnValues",
-        "boardId": "18403483965",
-        "itemId": "={{ $json.monday_pulse_id }}",
-        "columnValues": "={{ JSON.stringify(Object.fromEntries(Object.entries({\n  \"text_mm1b9vf3\": $json.passenger_full_name || \"\",\n  \"text_mm1gwg6h\": $json.passenger_voucher_primary || \"\",\n  \"text_mm1b1b5w\": $json.reservation_code || \"\",\n  \"text_mm1bq9bc\": ($json.primary_ticket_number || \"\").replace(/\\s+/g, \" \").trim(),\n  \"text_mm1b4mb1\": $json.airline_main || $json.full_payload?.airline_main || \"\",\n  \"long_text_mm1g71j8\": $json.airlines_involved_text || \"\",\n  \"text_mm1gtmbn\": $json.full_payload?.agency_name || \"\",\n  \"text_mm1gtmpz\": $json.full_payload?.issuing_office || \"\",\n  \"text_mm1g288g\": $json.full_payload?.currency || \"\",\n  \"date_mm1bw16n\": $json.full_payload?.issue_date ? { \"date\": $json.full_payload.issue_date } : undefined,\n  \"text_mm1b8rv7\": $json.full_payload?.origin_main_code || \"\",\n  \"text_mm1bxfa3\": $json.full_payload?.destination_final_code || \"\",\n  \"text_mm1cd796\": $json.passenger_destination || \"\",\n  \"long_text_mm1bpk6w\": $json.full_payload?.route_summary || \"\",\n  \"date_mm1bshfd\": $json.departure_date ? { \"date\": $json.departure_date } : undefined,\n  \"date_mm1bqrzy\": $json.return_date ? { \"date\": $json.return_date } : undefined,\n  \"color_mm1b30rv\": $json.full_payload?.trip_type ? { \"label\": $json.full_payload.trip_type } : undefined,\n  \"numeric_mm1bhwn0\": $json.segment_count ? Number($json.segment_count) : undefined,\n  \"text_mm1b7ycn\": $json.full_payload?.travel_class || \"\",\n  \"text_mm1bk9hf\": $json.full_payload?.baggage_allowance || \"\",\n  \"text_mm1bacys\": $json.full_payload?.fare_basis || \"\",\n  \"color_mm1b1pjr\": $json.full_payload?.booking_status ? { \"label\": ($json.full_payload.booking_status === \"OK\" ? \"Confirmada\" : $json.full_payload.booking_status) } : undefined,\n  \"long_text_mm1c70w4\": $json.formatted_passengers_list || \"\",\n  \"long_text_mm1gq119\": $json.extras_text || \"\",\n  \"color_mm1by1dx\": { \"label\": \"Procesado\" },\n  \"text_mm1b1eh\": $json.document_id || \"\"\n}).filter(([_, v]) => v !== undefined))) }}"
+        "method": "POST",
+        "url": "https://api.monday.com/v2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQzNTA4MjUxMSwiYWFpIjoxMSwidWlkIjo2MTE1OTA2NSwiaWFkIjoiMjAyNC0xMS0xMVQxNTo1Nzo1OC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTAyNzI0MTUsInJnbiI6InVzZTEifQ.h6ZArEjw5fm1VjmMlOvI0HpQEFoMNSzSc8C3U7t4Y-8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  query: \"mutation ChangeColumnValues($boardId: ID!, $itemId: ID!, $columnValues: JSON!) { change_multiple_column_values(board_id: $boardId, item_id: $itemId, column_values: $columnValues) { id } }\",\n  variables: {\n    boardId: \"18404261128\",\n    itemId: String($json.monday_pulse_id || \"\"),\n    columnValues: JSON.stringify(Object.fromEntries(Object.entries({\n      text_mm1hp89m: $json.passenger_full_name || \"\",\n      text_mm1h8pm4: $json.passenger_voucher_primary || \"\",\n      text_mm1hsfqk: $json.reservation_code || \"\",\n      text_mm1h73tr: ($json.primary_ticket_number || \"\").replace(/\\\\s+/g, \" \").trim(),\n      text_mm1h4c1x: $json.airline_main || $json.full_payload?.airline_main || \"\",\n      long_text_mm1htsvp: $json.airlines_involved_text || \"\",\n      text_mm1hat8: $json.full_payload?.agency_name || \"\",\n      text_mm1hhfed: $json.full_payload?.issuing_office || \"\",\n      text_mm1hhmv3: $json.full_payload?.currency || \"\",\n      date_mm1hm9m1: $json.full_payload?.issue_date ? { date: $json.full_payload.issue_date } : undefined,\n      text_mm1hg626: $json.full_payload?.origin_main_code || \"\",\n      text_mm1hw6d4: $json.full_payload?.destination_final_code || \"\",\n      text_mm1h9n6: $json.passenger_destination || \"\",\n      long_text_mm1hv2bf: $json.full_payload?.route_summary || \"\",\n      date_mm1hrhab: $json.departure_date ? { date: $json.departure_date } : undefined,\n      date_mm1hw0em: $json.return_date ? { date: $json.return_date } : undefined,\n      color_mm1hay0h: $json.full_payload?.trip_type ? { label: $json.full_payload.trip_type } : undefined,\n      numeric_mm1hp6de: $json.segment_count ? Number($json.segment_count) : undefined,\n      text_mm1h5h1y: $json.full_payload?.travel_class || \"\",\n      text_mm1h8nxb: $json.full_payload?.baggage_allowance || \"\",\n      text_mm1h1tj9: $json.full_payload?.fare_basis || \"\",\n      color_mm1hjsfa: (() => { const b = ($json.full_payload?.booking_status || \"\").toString(); const m = { ok: \"Confirmada\", confirmado: \"Confirmada\", confirmada: \"Confirmada\", cancelada: \"Cancelada\", emitida: \"Emitida\", reprogramada: \"Reprogramada\", pendiente: \"Pendiente\" }; const label = m[b.toLowerCase()] || (/confirm/i.test(b) || b === \"OK\" ? \"Confirmada\" : null); return label ? { label } : undefined; })(),\n      long_text_mm1hctk2: $json.formatted_passengers_list || \"\",\n      long_text_mm1h8ynj: $json.extras_text || \"\",\n      color_mm1hadg8: { label: \"Procesado\" },\n      text_mm1h7pvt: $json.document_id || \"\"\n    }).filter(([_, v]) => v !== undefined)))\n  }\n} }}",
+        "options": {}
       },
-      "type": "n8n-nodes-base.mondayCom",
-      "typeVersion": 1,
+      "id": "92bbcc1f-2fba-4b4f-bab1-cc680c7281e7",
+      "name": "Mapear Parseur a Monday",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         4832,
         2224
-      ],
-      "id": "92bbcc1f-2fba-4b4f-bab1-cc680c7281e7",
-      "name": "Mapear Parseur a Monday",
-      "credentials": {
-        "mondayComApi": {
-          "id": "UmWLd4GnGsxkmqeX",
-          "name": "grupo jyl"
-        }
-      }
+      ]
     },
     {
       "parameters": {
@@ -793,7 +810,7 @@
               "isRetry": false,
               "userId": 61159065,
               "originalTriggerUuid": null,
-              "boardId": 18403483965,
+              "boardId": 18404261128,
               "groupId": "group_mm1bahwb",
               "pulseId": 11519946712,
               "pulseName": "DIAZ CONTRERAS 2",

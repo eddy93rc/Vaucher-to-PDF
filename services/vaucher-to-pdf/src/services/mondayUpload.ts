@@ -19,7 +19,7 @@ export async function uploadFileToMonday(
     throw new Error('MONDAY_API_KEY no configurada');
   }
 
-  let columnId = options?.columnId ?? config.monday.fileColumnId;
+  let columnId = options?.columnId ?? config.monday.voucherPdfColumnId;
   if (!columnId && options?.boardId) {
     const detected = await getFileColumnId(options.boardId);
     if (detected) {
@@ -29,7 +29,7 @@ export async function uploadFileToMonday(
   }
   if (!columnId) {
     throw new Error(
-      'No se encontró columna de archivos. Define MONDAY_FILE_COLUMN_ID en .env o asegúrate de tener una columna tipo "File" en el board.'
+      'No se encontró columna para el PDF. Define MONDAY_VOUCHER_PDF_COLUMN_ID en .env (ej: file_mm1h5b78 para columna Voucher PDF).'
     );
   }
 

@@ -1,8 +1,9 @@
 # Auto-voucher: PDF Extractor (OpenAI) + Vaucher-to-PDF
 #
 # Uso:
+#   docker compose up -d                 # extractor + vaucher-to-pdf
 #   docker compose up -d pdf-extractor   # solo extractor
-#   docker compose up -d                 # todos los servicios
+#   docker compose up -d vaucher-to-pdf  # solo generador voucher
 #
 # Variables: crear .env con OPENAI_API_KEY, MONDAY_API_TOKEN, etc.
 
@@ -29,12 +30,13 @@ services:
     build: ./services/vaucher-to-pdf
     ports:
       - "9110:9110"
+    volumes:
+      - ./services/vaucher-to-pdf/templates:/app/templates
     environment:
       - PORT=9110
       - MONDAY_API_KEY=${MONDAY_API_TOKEN}
-      - MONDAY_BOARD_ID=${MONDAY_BOARD_ID:-18403483965}
-    profiles:
-      - full
+      - MONDAY_BOARD_ID=${MONDAY_BOARD_ID:-18404261128}
+      - MONDAY_VOUCHER_PDF_COLUMN_ID=${MONDAY_VOUCHER_PDF_COLUMN_ID:-file_mm1h5b78}
 
 volumes:
   pdf-extractor-tmp:

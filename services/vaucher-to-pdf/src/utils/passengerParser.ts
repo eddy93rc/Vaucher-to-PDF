@@ -10,6 +10,8 @@ export interface ParsedPassenger {
   nameFull: string;
   /** Formato APELLIDO / NOMBRE para tabla de pasajeros */
   nameTableDisplay: string;
+  /** Formato NOMBRE APELLIDO (sin slash) para tabla: ej. HARONID CEDENO DALMASI */
+  nameTableDisplayLine: string;
   ticket: string;
 }
 
@@ -75,12 +77,17 @@ export function parsearLineaPasajero(linea: string): ParsedPassenger | null {
     apellidoDisplay && nombreDisplay
       ? `${apellidoDisplay.toUpperCase()} / ${nombreDisplay.toUpperCase()}`
       : (apellidoDisplay || nombreDisplay || parte).toUpperCase();
+  const nameTableDisplayLine =
+    apellidoDisplay && nombreDisplay
+      ? `${nombreDisplay.toUpperCase()} ${apellidoDisplay.toUpperCase()}`.trim()
+      : (apellidoDisplay || nombreDisplay || parte).toUpperCase();
 
   return {
     apellidoNombre: parte,
     nameIata: parte,
     nameFull: nameFull || parte,
     nameTableDisplay,
+    nameTableDisplayLine,
     ticket,
   };
 }

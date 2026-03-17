@@ -9,8 +9,12 @@ export const config = {
   logLevel: process.env.LOG_LEVEL ?? 'info',
   monday: {
     apiKey: process.env.MONDAY_API_KEY ?? '',
-    boardId: process.env.MONDAY_BOARD_ID ?? '18403483965',
-    fileColumnId: process.env.MONDAY_FILE_COLUMN_ID ?? 'file_mm1bxc89',
+    boardId: process.env.MONDAY_BOARD_ID ?? '18404261128',
+    /** Columna donde se sube el PDF del voucher generado (Voucher PDF). Ticket = otra columna, usada en n8n. */
+    voucherPdfColumnId:
+      process.env.MONDAY_VOUCHER_PDF_COLUMN_ID ??
+      process.env.MONDAY_FILE_COLUMN_ID ??
+      'file_mm1h5b78',
   },
   agencyPhoneDefault: process.env.AGENCY_PHONE_DEFAULT ?? '849-919-1919',
 };

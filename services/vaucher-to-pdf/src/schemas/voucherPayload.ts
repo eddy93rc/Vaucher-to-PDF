@@ -35,6 +35,8 @@ export const passengerSchema = z.object({
   nameIata: z.string(),
   nameFull: z.string(),
   nameTableDisplay: z.string().optional(),
+  /** NOMBRE APELLIDO sin slash, para tabla: ej. HARONID CEDENO DALMASI */
+  nameTableDisplayLine: z.string().optional(),
   passengerType: z.string().optional().default(''),
   ticketNumber: z.string().optional().default(''),
 });

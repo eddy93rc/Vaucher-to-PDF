@@ -22,7 +22,7 @@ import { config } from '../config';
 
 function sanitizeTicketNumber(v: string | undefined): string {
   if (!v || !v.trim()) return '';
-  const t = v.trim();
+  const t = v.trim().replace(/\s+/g, '');
   if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return '';
   return t;
 }
@@ -126,7 +126,7 @@ function buildPassengerRows(reservation: VoucherPayload['reservation']): Passeng
     return list.map((p) => ({
       nameFull: p.nameFull || p.nameIata,
       nameIata: p.nameIata,
-      nameTableDisplay: p.nameTableDisplay || p.nameIata,
+      nameTableDisplay: (p.nameTableDisplayLine ?? p.nameTableDisplay ?? p.nameIata).trim(),
       passengerType: p.passengerType || '',
       ticketNumber: p.ticketNumber || '',
       ticketNumberDisplay: sanitizeTicketNumber(p.ticketNumber),

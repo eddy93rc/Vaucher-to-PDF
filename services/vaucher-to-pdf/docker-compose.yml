@@ -12,7 +12,7 @@ services:
       - LOG_LEVEL=info
       - MONDAY_API_KEY=${MONDAY_API_KEY}
       - MONDAY_BOARD_ID=${MONDAY_BOARD_ID:-18403483965}
-      - MONDAY_FILE_COLUMN_ID=${MONDAY_FILE_COLUMN_ID:-file_mm1bxc89}
+      - MONDAY_VOUCHER_PDF_COLUMN_ID=${MONDAY_VOUCHER_PDF_COLUMN_ID:-file_mm1h5b78}
     volumes:
       - ./output:/app/output
     restart: unless-stopped

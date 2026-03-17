@@ -155,9 +155,16 @@ renderVoucherRouter.post('/render-voucher-by-pulse', async (req: Request, res: R
 
     const businessErrors = validateVoucherBusinessRules(validatedPayload.data);
     if (businessErrors.length > 0) {
+      const hasMissingSegments = businessErrors.some((e) => e.includes('segmentos'));
       res.status(400).json({
         error: 'Datos de Monday incompletos para el voucher',
         details: businessErrors,
+        hint: hasMissingSegments
+          ? 'El item no tiene subitems (segmentos). Ejecuta primero el flujo de extracción: sube el ticket PDF al item → Webhook1 extrae con OpenAI → Mapear Monday → Crear Subitems. Luego vuelve a pulsar Generar Voucher.'
+          : undefined,
+        diagnostic: hasMissingSegments
+          ? `POST /monday-structure con {"pulse_id": "${pulse_id}"} para ver si el item tiene subitems.`
+          : undefined,
       });
       return;
     }

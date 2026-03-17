@@ -265,12 +265,74 @@ function buildMappingFromTitles(
       if (segMatch && TEXT_ONLY_FIELDS.has(segMatch)) continue;
       if (segMatch === 'ticket_number') continue;
     }
-    if (resMatch) reservation[resMatch] = col.id;
-    if (segMatch) segment[segMatch] = col.id;
+    // Prefer first match: subboards pueden tener columnas duplicadas (mismo título, distinto ID);
+    // las primeras suelen tener datos, las duplicadas suelen estar vacías.
+    if (resMatch && !reservation[resMatch]) reservation[resMatch] = col.id;
+    if (segMatch && !segment[segMatch]) segment[segMatch] = col.id;
   }
 
   return { reservation, segment };
 }
+
+/** Mapeo por defecto para board 18404261128 / subboard 18404275758 (evita columnas duplicadas vacías) */
+const DEFAULT_BOARD_18404261128: ColumnMapping = {
+  reservation: {
+    passenger_full: 'text_mm1hp89m',
+    passenger_voucher: 'text_mm1h8pm4',
+    passenger_list: 'long_text_mm1hctk2',
+    reservation_code: 'text_mm1hsfqk',
+    ticket_number: 'text_mm1h73tr',
+    airline_main: 'text_mm1h4c1x',
+    airlines_involved: 'long_text_mm1htsvp',
+    agency_name: 'text_mm1hat8',
+    issuing_office: 'text_mm1hhfed',
+    issue_date: 'date_mm1hm9m1',
+    origin_main_code: 'text_mm1hg626',
+    destination_final_code: 'text_mm1hw6d4',
+    passenger_destination: 'text_mm1h9n6',
+    route_summary: 'long_text_mm1hv2bf',
+    departure_date: 'date_mm1hrhab',
+    return_date: 'date_mm1hw0em',
+    trip_type: 'color_mm1hay0h',
+    segment_count: 'numeric_mm1hp6de',
+    travel_class: 'text_mm1h5h1y',
+    baggage_allowance: 'text_mm1h8nxb',
+    fare_basis: 'text_mm1h1tj9',
+    booking_status: 'color_mm1hjsfa',
+    agency_emergency_phone: 'phone_mm1h1s7',
+    currency: 'text_mm1hhmv3',
+    extras: 'long_text_mm1h8ynj',
+  },
+  segment: {
+    segment_number: 'numeric_mm1hb425',
+    voucher_heading_date: 'date_mm1han5w',
+    voucher_heading_destination: 'text_mm1hqxn5',
+    voucher_trip_type: 'color_mm1hpswz',
+    flight_number: 'text_mm1hzm3v',
+    marketing_airline: 'text_mm1h8v9y',
+    operated_by: 'text_mm1hef1q',
+    origin_code: 'text_mm1hxyb7',
+    origin_name: 'text_mm1hkx1y',
+    origin_city: 'text_mm1h6n0s',
+    origin_terminal: 'text_mm1hqczm',
+    destination_code: 'text_mm1h7rxx',
+    destination_name: 'text_mm1hqc6v',
+    destination_city: 'text_mm1hrhf7',
+    destination_terminal: 'text_mm1hn6g5',
+    departure_date: 'date_mm1hb3qe',
+    departure_time: 'text_mm1hbseg',
+    arrival_date: 'date_mm1hjj7e',
+    arrival_time: 'text_mm1hb0sq',
+    duration: 'text_mm1hmb1a',
+    travel_class: 'text_mm1hq71s',
+    booking_status: 'color_mm1hne1b',
+    baggage: 'text_mm1hzhq6',
+    fare_basis: 'text_mm1hwrt9',
+    ticket_number: 'text_mm1h94ne',
+    seat: 'text_mm1ha8fn',
+    seat_assignments: 'long_text_mm1h4jjb',
+  },
+};
 
 function loadColumnMapping(): ColumnMapping | null {
   const mappingPath = path.join(process.cwd(), 'monday-column-mapping.json');
@@ -299,6 +361,10 @@ export async function buildColumnMapping(
   const explicit = loadColumnMapping();
   if (explicit && Object.keys(explicit.reservation || {}).length > 0) {
     return explicit;
+  }
+
+  if (boardId === '18404261128') {
+    return DEFAULT_BOARD_18404261128;
   }
 
   const [mainColumns, segmentColumns] = await Promise.all([
@@ -410,6 +476,7 @@ export async function mondayItemToVoucherPayload(
     nameIata: p.nameIata,
     nameFull: p.nameFull,
     nameTableDisplay: p.nameTableDisplay || p.nameIata,
+    nameTableDisplayLine: p.nameTableDisplayLine || p.nameTableDisplay || p.nameIata,
     passengerType: '',
     ticketNumber: p.ticket || getRes('ticket_number'),
   }));
@@ -426,14 +493,19 @@ export async function mondayItemToVoucherPayload(
             const voucher = getRes('passenger_voucher') || getRes('passenger_full') || item.name || '';
             const full = getRes('passenger_full') || item.name || '';
             let nameTableDisplay = full.toUpperCase();
+            let nameTableDisplayLine = nameTableDisplay.replace(/\s*\/\s*/g, ' ');
             if (voucher && voucher.includes('/')) {
               const parsed = parsearListaPasajeros(voucher + ' - ')[0];
-              if (parsed?.nameTableDisplay) nameTableDisplay = parsed.nameTableDisplay;
+              if (parsed) {
+                nameTableDisplay = parsed.nameTableDisplay || nameTableDisplay;
+                nameTableDisplayLine = parsed.nameTableDisplayLine || nameTableDisplay.replace(/\s*\/\s*/g, ' ');
+              }
             }
             return {
               nameIata: voucher || full,
               nameFull: full || voucher,
               nameTableDisplay,
+              nameTableDisplayLine,
               passengerType: '',
               ticketNumber: getRes('ticket_number'),
             };
