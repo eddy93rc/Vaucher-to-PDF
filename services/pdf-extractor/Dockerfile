@@ -1,16 +1,26 @@
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build
+
+# Stage 2: Production
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Directorio para PDFs temporales
 RUN mkdir -p /tmp/pdf-extractor
 
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 9120
 

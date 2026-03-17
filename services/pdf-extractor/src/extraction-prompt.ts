@@ -22,7 +22,7 @@ export const EXTRACTION_USER_PROMPT = `Analiza este ticket aéreo y extrae todos
 export const RESPONSE_FORMAT = {
   type: 'json_schema' as const,
   name: 'ticket_extraction',
-  strict: true,
+  strict: false, // strict:true exige additionalProperties:false en todo el árbol; usar false evita el error 400
   schema: {
       type: 'object',
       properties: {
@@ -96,11 +96,11 @@ export const RESPONSE_FORMAT = {
               voucher_trip_type: { type: 'string', description: 'Salida, Conexión o Retorno' },
             },
             required: ['segment_number', 'origin_code', 'destination_code'],
-            additionalProperties: true,
+            additionalProperties: false,
           },
         },
       },
   required: ['reservation_code', 'passengers', 'segments'],
-  additionalProperties: true,
+  additionalProperties: false,
   }
 };

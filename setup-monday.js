@@ -8,16 +8,15 @@
  * Uso:
  *   MONDAY_API_TOKEN=xxx node setup-monday.js
  *   O: node setup-monday.js  (carga .env automáticamente si existe)
+ *   Board por ID: MONDAY_BOARD_ID=18404261128 node setup-monday.js
  *   Board con nombre distinto: MONDAY_BOARD_NAME="RESERVAS_NUEVO" node setup-monday.js
  *
  * Requisitos: Node.js 18+ (fetch nativo)
  * Idempotente: si el board existe, solo añade columnas faltantes.
  * No destruye datos existentes.
  *
- * NOTA: Monday.com no permite forzar IDs de columna por API. Los IDs son
- * asignados automáticamente. El script detecta columnas por TÍTULO y crea
- * solo las que faltan. Al final imprime los IDs actuales para usar en n8n.
- * Ver MONDAY_MAPPING.md para el mapeo completo Parseur → Monday.
+ * NOTA: Las columnas están alineadas con el extractor OpenAI y el generador
+ * de PDF (vaucher-to-pdf). Los títulos coinciden con el mapeo por título.
  */
 
 // Cargar .env si existe (sin dependencias externas)
@@ -42,6 +41,8 @@ if (fs.existsSync(envPath)) {
 const API_URL = process.env.MONDAY_API_URL || 'https://api.monday.com/v2';
 const API_TOKEN = process.env.MONDAY_API_TOKEN;
 const WORKSPACE_ID = process.env.MONDAY_WORKSPACE_ID;
+/** Si está definido, usa este board directamente (ej: 18404261128). No crea ni busca por nombre. */
+const BOARD_ID = process.env.MONDAY_BOARD_ID;
 
 // --- Validación de variables de entorno ---
 if (!API_TOKEN || API_TOKEN === 'tu_token_aqui') {
@@ -50,7 +51,7 @@ if (!API_TOKEN || API_TOKEN === 'tu_token_aqui') {
   process.exit(1);
 }
 
-// --- Definición de columnas principales del board RESERVAS ---
+// --- Definición de columnas principales (alineadas con extractor OpenAI + generador PDF) ---
 const MAIN_COLUMNS = [
   { title: 'Pasajero principal', column_type: 'text' },
   { title: 'Nombre voucher', column_type: 'text' },
@@ -98,26 +99,26 @@ const MAIN_COLUMNS = [
   { title: 'Factura PDF', column_type: 'file' },
   { title: 'Recibo PDF', column_type: 'file' },
   {
-    title: 'Estado Parseur',
+    title: 'Estado extracción',
     column_type: 'status',
     defaults: JSON.stringify({
       labels: {
         '1': 'Pendiente',
         '2': 'Listo para extraer',
-        '3': 'Enviado a Parseur',
+        '3': 'Enviado a procesar',
         '4': 'Procesado',
         '6': 'Error',
       },
     }),
   },
-  { title: 'DocumentID Parseur', column_type: 'text' },
+  { title: 'DocumentID', column_type: 'text' },
   { title: 'Correo cliente', column_type: 'email' },
   { title: 'Teléfono cliente', column_type: 'phone' },
   { title: 'Correo agencia', column_type: 'email' },
   { title: 'Teléfono agencia', column_type: 'phone' },
 ];
 
-// --- Definición de columnas de subitems (segmentos) ---
+// --- Definición de columnas de subitems (segmentos, alineadas con extractor OpenAI) ---
 const SUBITEM_COLUMNS = [
   { title: 'Segmento #', column_type: 'numbers' },
   { title: 'Fecha encabezado voucher', column_type: 'date' },
@@ -159,6 +160,103 @@ const SUBITEM_COLUMNS = [
   { title: 'Asientos pasajeros', column_type: 'long_text' },
 ];
 
+/** Segmentos de ejemplo (del extractor OpenAI) para crear subitems visibles en la Plantilla */
+const SAMPLE_SEGMENTS = [
+  {
+    name: '1 - 088 - SDQ/MAD',
+    segment_number: 1,
+    flight_number: '088',
+    marketing_airline: 'UX',
+    operated_by: 'AIR EUROPA',
+    origin_code: 'SDQ',
+    origin_city: 'SANTO DOMINGO',
+    origin_name: 'LAS AMERICAS INTL',
+    origin_terminal: '',
+    destination_code: 'MAD',
+    destination_city: 'MADRID',
+    destination_name: 'ADOLFO SUAREZ BARAJAS',
+    destination_terminal: 'T1',
+    departure_date: '2026-06-01',
+    departure_time: '21:10',
+    arrival_date: '2026-06-02',
+    arrival_time: '11:20',
+    duration: '08:10',
+    travel_class: 'BUSINESS',
+    baggage: '2PC',
+    fare_basis: 'I',
+    ticket_number: '996 2425484279',
+    seat: '03A',
+    seat_assignments: 'DIAZCONTRERAS/ANAALEXANDRA=03A,DIAZFELIZ/RAFAELJOSE=03D',
+    voucher_heading_date: '2026-06-01',
+    voucher_heading_destination: 'MADRID, MAD',
+    voucher_trip_type: 'Salida',
+    booking_status: 'OK',
+    salida_llegada: 'SDQ 2026-06-01 21:10 -> MAD 2026-06-02 11:20',
+  },
+  {
+    name: '2 - 7235 - MAD/LCG',
+    segment_number: 2,
+    flight_number: '7235',
+    marketing_airline: 'UX',
+    operated_by: 'AIR EUROPA EXPRESS',
+    origin_code: 'MAD',
+    origin_city: 'MADRID',
+    origin_name: 'ADOLFO SUAREZ BARAJAS',
+    origin_terminal: 'T2',
+    destination_code: 'LCG',
+    destination_city: 'A CORUNA',
+    destination_name: 'A CORUNA AIRPORT',
+    destination_terminal: '',
+    departure_date: '2026-06-02',
+    departure_time: '15:10',
+    arrival_date: '2026-06-02',
+    arrival_time: '16:20',
+    duration: '01:10',
+    travel_class: 'BUSINESS',
+    baggage: '2PC',
+    fare_basis: 'I',
+    ticket_number: '996 2425484279',
+    seat: '03F',
+    seat_assignments: 'DIAZCONTRERAS/ANAALEXANDRA=03F,DIAZFELIZ/RAFAELJOSE=03D',
+    voucher_heading_date: '2026-06-02',
+    voucher_heading_destination: 'A CORUNA, LCG',
+    voucher_trip_type: 'Conexión',
+    booking_status: 'OK',
+    salida_llegada: 'MAD 2026-06-02 15:10 -> LCG 2026-06-02 16:20',
+  },
+  {
+    name: '3 - 089 - MAD/SDQ',
+    segment_number: 3,
+    flight_number: '089',
+    marketing_airline: 'UX',
+    operated_by: 'AIR EUROPA',
+    origin_code: 'MAD',
+    origin_city: 'MADRID',
+    origin_name: 'ADOLFO SUAREZ BARAJAS',
+    origin_terminal: 'T1',
+    destination_code: 'SDQ',
+    destination_city: 'SANTO DOMINGO',
+    destination_name: 'LAS AMERICAS INTL',
+    destination_terminal: '',
+    departure_date: '2026-06-11',
+    departure_time: '15:35',
+    arrival_date: '2026-06-11',
+    arrival_time: '18:15',
+    duration: '08:40',
+    travel_class: 'BUSINESS',
+    baggage: '2PC',
+    fare_basis: 'O',
+    ticket_number: '996 2425484279',
+    seat: '02K',
+    seat_assignments: 'DIAZCONTRERAS/ANAALEXANDRA=02K,DIAZFELIZ/RAFAELJOSE=02G',
+    voucher_heading_date: '2026-06-11',
+    voucher_heading_destination: 'SANTO DOMINGO, SDQ',
+    voucher_trip_type: 'Retorno',
+    booking_status: 'OK',
+    salida_llegada: 'MAD 2026-06-11 15:35 -> SDQ 2026-06-11 18:15',
+  },
+];
+
 /**
  * Ejecuta una query o mutation GraphQL contra la API de Monday.
  */
@@ -188,9 +286,12 @@ async function mondayRequest(query, variables = {}) {
 const BOARD_NAME = process.env.MONDAY_BOARD_NAME || 'RESERVAS';
 
 /**
- * Busca el board por nombre en la lista de boards.
+ * Obtiene el board: si BOARD_ID está definido lo usa; si no, busca por nombre.
  */
-async function findReservasBoard() {
+async function getBoardId() {
+  if (BOARD_ID) {
+    return String(BOARD_ID).trim();
+  }
   const data = await mondayRequest(`
     query {
       boards(limit: 200) {
@@ -367,6 +468,134 @@ async function createSubitem(parentItemId, subitemName) {
 }
 
 /**
+ * Crea un subitem con valores de columnas. Usado para crear segmentos de ejemplo.
+ */
+async function createSubitemWithValues(parentItemId, subitemName, columnValues) {
+  const data = await mondayRequest(
+    `
+    mutation($parentItemId: ID!, $itemName: String!, $columnValues: JSON!) {
+      create_subitem(parent_item_id: $parentItemId, item_name: $itemName, column_values: $columnValues) {
+        id
+        board { id }
+      }
+    }
+  `,
+    {
+      parentItemId: parentItemId.toString(),
+      itemName: subitemName,
+      columnValues: JSON.stringify(columnValues),
+    }
+  );
+  return data.create_subitem?.id ?? null;
+}
+
+/**
+ * Actualiza los valores de columnas de un item/subitem existente.
+ * @param {string} itemId - ID del item o subitem
+ * @param {string} boardId - ID del board (para subitems, usar el subboard id)
+ * @param {object} columnValues - Objeto { column_id: value }
+ */
+async function updateItemColumns(itemId, boardId, columnValues) {
+  await mondayRequest(
+    `
+    mutation($itemId: ID!, $boardId: ID!, $columnValues: JSON!) {
+      change_multiple_column_values(item_id: $itemId, board_id: $boardId, column_values: $columnValues) {
+        id
+      }
+    }
+  `,
+    {
+      itemId: itemId.toString(),
+      boardId,
+      columnValues: JSON.stringify(columnValues),
+    }
+  );
+}
+
+/** Mapeo campo segmento -> título columna Monday (subitems) */
+const SEGMENT_FIELD_TO_COLUMN = {
+  segment_number: 'Segmento #',
+  voucher_heading_date: 'Fecha encabezado voucher',
+  voucher_heading_destination: 'Destino voucher',
+  voucher_trip_type: 'Tipo tramo',
+  flight_number: 'Vuelo',
+  marketing_airline: 'Marketing airline',
+  operated_by: 'Operado por',
+  origin_code: 'Origen código',
+  origin_name: 'Origen nombre',
+  origin_city: 'Origen ciudad',
+  origin_terminal: 'Origen terminal',
+  destination_code: 'Destino código',
+  destination_name: 'Destino nombre',
+  destination_city: 'Destino ciudad',
+  destination_terminal: 'Destino terminal',
+  departure_date: 'Salida fecha',
+  departure_time: 'Salida hora',
+  arrival_date: 'Llegada fecha',
+  arrival_time: 'Llegada hora',
+  salida_llegada: 'Salida y llegada',
+  duration: 'Duración',
+  travel_class: 'Clase segmento',
+  booking_status: 'Estado segmento',
+  baggage: 'Equipaje segmento',
+  fare_basis: 'Fare basis segmento',
+  ticket_number: 'Ticket No.',
+  seat: 'Asiento',
+  seat_assignments: 'Asientos pasajeros',
+};
+
+/**
+ * Construye column_values para Monday a partir de un segmento y el mapa título->id.
+ * Usa el primer ID encontrado por cada título (puede haber duplicados).
+ */
+function buildSegmentColumnValues(segment, colTitleToId) {
+  const values = {};
+  for (const [field, colTitle] of Object.entries(SEGMENT_FIELD_TO_COLUMN)) {
+    const colId = colTitleToId.get(colTitle);
+    if (!colId) continue;
+    const raw = segment[field];
+    if (raw === undefined || raw === null) continue;
+    const str = String(raw).trim();
+    if (field === 'voucher_heading_date' || field === 'departure_date' || field === 'arrival_date') {
+      if (str) values[colId] = { date: str };
+    } else if (field === 'voucher_trip_type') {
+      if (str) values[colId] = { label: str };
+    } else if (field === 'booking_status') {
+      const label = str === 'OK' ? 'Confirmado' : str;
+      if (label) values[colId] = { label };
+    } else if (field === 'segment_number') {
+      values[colId] = Number(raw) || 0;
+    } else if (field === 'seat_assignments') {
+      if (str) values[colId] = { text: str };
+    } else if (typeof raw === 'string' || typeof raw === 'number') {
+      values[colId] = str || raw;
+    }
+  }
+  return values;
+}
+
+/**
+ * Obtiene los subitems de un item padre.
+ */
+async function getSubitems(boardId, parentItemId) {
+  const data = await mondayRequest(
+    `
+    query($itemId: [ID!]!) {
+      items(ids: $itemId) {
+        subitems {
+          id
+          name
+          column_values { id text value }
+        }
+      }
+    }
+  `,
+    { itemId: [parentItemId.toString()] }
+  );
+  return data.items?.[0]?.subitems ?? [];
+}
+
+/**
  * Crea las columnas faltantes en un board según la definición.
  */
 async function ensureColumns(boardId, definitions, existingColumns) {
@@ -447,9 +676,11 @@ async function main() {
   console.log('=== Setup Monday - Tablero RESERVAS ===\n');
   console.log(`API: ${API_URL}\n`);
 
-  let boardId = await findReservasBoard();
+  let boardId = await getBoardId();
 
-  if (boardId) {
+  if (boardId && BOARD_ID) {
+    console.log(`Usando board por ID: ${boardId}. Verificando columnas...`);
+  } else if (boardId) {
     console.log(`Board "${BOARD_NAME}" encontrado (id: ${boardId}). Verificando columnas...`);
   } else {
     console.log(`Board "${BOARD_NAME}" no existe. Creando...`);
@@ -503,6 +734,55 @@ async function main() {
     if (subCreated.length) {
       console.log(`\n  Columnas de subitems creadas: ${subCreated.length}`);
       subCreated.forEach((c) => console.log(`    - ${c.title} (id: ${c.id})`));
+    }
+
+    // Crear subitems de ejemplo bajo Plantilla - Reserva (para que sean visibles en Monday)
+    const groups = await getBoardGroups(boardId);
+    const configGroup = groups.find((g) => g.title === 'Configuración');
+    const templateItemId = configGroup ? await findItemInGroup(boardId, configGroup.id, 'Plantilla - Reserva') : null;
+
+    if (templateItemId) {
+      const existingSubs = await getSubitems(boardId, templateItemId);
+      const subColumnsFinal = await getBoardColumns(subboardId); // incluye columnas recién creadas
+      const colTitleToId = new Map();
+      for (const c of subColumnsFinal) {
+        if (!colTitleToId.has(c.title)) colTitleToId.set(c.title, c.id);
+      }
+
+      console.log('\n  Creando/actualizando subitems de ejemplo en Plantilla - Reserva...');
+      let created = 0;
+      let updated = 0;
+
+      for (let i = 0; i < SAMPLE_SEGMENTS.length; i++) {
+        const seg = SAMPLE_SEGMENTS[i];
+        const colValues = buildSegmentColumnValues(seg, colTitleToId);
+        if (Object.keys(colValues).length === 0) continue;
+
+        const matchByName = (name) => existingSubs.find((s) => s.name === name);
+        const existingForSeg1 = i === 0 ? matchByName('Segmento 1') || matchByName(seg.name) : null;
+        const existingForSeg = i > 0 ? matchByName(seg.name) : existingForSeg1;
+
+        if (existingForSeg) {
+          try {
+            await updateItemColumns(existingForSeg.id, subboardId, colValues);
+            updated++;
+            console.log(`    Actualizado: ${seg.name}`);
+          } catch (err) {
+            console.error(`    Error actualizando "${seg.name}":`, err.message);
+          }
+        } else {
+          try {
+            await createSubitemWithValues(templateItemId, seg.name, colValues);
+            created++;
+            console.log(`    Creado: ${seg.name}`);
+          } catch (err) {
+            console.error(`    Error creando "${seg.name}":`, err.message);
+          }
+        }
+      }
+      if (created > 0 || updated > 0) {
+        console.log(`  Subitems: ${created} creados, ${updated} actualizados.`);
+      }
     }
   } else {
     console.log('\n  No se pudo obtener el subboard. Las columnas de subitems no se crearon.');
