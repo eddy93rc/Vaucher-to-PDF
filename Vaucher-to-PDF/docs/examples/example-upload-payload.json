@@ -1,0 +1,50 @@
+{
+  "item_id": "1234567890",
+  "reservation": {
+    "passenger_full": "FRANCIS WILLYS DE OLEO REYES",
+    "passenger_voucher": "DEOLEOREYES/FRANCISWILLYS",
+    "passenger_list": [
+      {
+        "nameIata": "DEOLEOREYES/FRANCISWILLYS",
+        "nameFull": "Francis Willys De Oleo Reyes",
+        "nameTableDisplay": "DE OLEO REYES / FRANCIS WILLYS",
+        "passengerType": "ADT",
+        "ticketNumber": "9962426250502"
+      }
+    ],
+    "reservation_code": "8ZTDP5",
+    "ticket_number": "9962426250502",
+    "airline_main": "AIR EUROPA",
+    "airlines_involved": ["AIR EUROPA"],
+    "agency_name": "JYL Consultores Turismo y Eventos",
+    "agency_emergency_phone": "849-919-1919",
+    "issuing_office": "WEB AIR EUROPA",
+    "extras": [
+      "VALIDE QUE SU PASAPORTE TENGA UNA VIGENCIA MINIMA DE 6 MESES.",
+      "SI TIENE UNA EMERGENCIA FAVOR CONTACTARNOS AL 849-919-1919"
+    ]
+  },
+  "segments": [
+    {
+      "segment_number": 1,
+      "voucher_heading_date": "2026-03-11",
+      "voucher_heading_destination": "MADRID ADOLFO SUAREZ BARAJAS",
+      "voucher_trip_type": "Salida",
+      "marketing_airline": "AIR EUROPA",
+      "flight_number": "UX88",
+      "operated_by": "AIR EUROPA",
+      "origin_code": "SDQ",
+      "origin_name": "SANTO DOMINGO LAS AMERICAS INTL",
+      "destination_code": "MAD",
+      "destination_name": "MADRID ADOLFO SUAREZ BARAJAS",
+      "departure_date": "2026-03-11",
+      "departure_time": "22:50:00",
+      "arrival_date": "2026-03-12",
+      "arrival_time": "11:55:00",
+      "duration": "08:05",
+      "ticket_number": "9962426250502",
+      "seat": "-",
+      "seat_assignments": "DEOLEOREYES/FRANCISWILLYS=03A"
+    }
+  ]
+}

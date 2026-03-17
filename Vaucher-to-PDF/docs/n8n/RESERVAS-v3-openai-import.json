@@ -1,0 +1,1099 @@
+{
+  "name": "RESERVAS V3 - Auto Voucher (OpenAI)",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a9067d1f-d348-4ce9-b022-e528acfeaf5c",
+              "name": "challenge",
+              "value": "={{$json[\"body\"][\"challenge\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cc620596-3387-46cf-8a3f-df3d3be81de8",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2144,
+        1936
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "22180fdb-0063-431e-a472-1d164989cafd",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        2256
+      ],
+      "alwaysOutputData": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "path": "AUTOMATIZACION-RESERVAS/d605cdcb-63a2-4821-8c7a-41cfceee69b3",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "963306a4-eaa1-45bf-b94f-ba435a5c81a4",
+      "name": "Webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2064,
+        1728
+      ],
+      "webhookId": "43c5c6d0-d4cd-4569-89f6-e6adb1bf0cf4"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.urls[0].json.public_url }}",
+        "options": {}
+      },
+      "id": "08b9c910-dfce-47a9-ae53-7e2a217e2bc7",
+      "name": "Descargar PDF Monday",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3680,
+        1952
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://pdf-extractor:9120/extract",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "monday_pulse_id",
+              "value": "={{ $('Webhook1').item.json.body.event.pulseId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1b3918c-98fb-4540-b12f-41ec2b93a3dc",
+      "name": "Extraer con OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3920,
+        1952
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const result = [];\n\nif (Array.isArray($json)) {\n  $json.forEach(item => {\n    if (item.data && Array.isArray(item.data.assets)) {\n      item.data.assets.forEach(asset => {\n        if (asset.public_url) {\n          result.push({ json: { public_url: asset.public_url } });\n        }\n      });\n    }\n  });\n} else {\n  if ($json.data && Array.isArray($json.data.assets)) {\n    $json.data.assets.forEach(asset => {\n      if (asset.public_url) {\n        result.push({ json: { public_url: asset.public_url } });\n      }\n    });\n  }\n}\n\n// Devolver un objeto con el array dentro para facilitar su uso en n8n\nreturn {\n  json: {\n    urls: result\n  }\n};"
+      },
+      "id": "d794b669-81d8-42a2-b2d2-13be42bb1d07",
+      "name": "URL Archivo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3376,
+        1984
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "endpoint": "https://api.monday.com/v2/",
+        "requestFormat": "json",
+        "query": "query GetAssetPublicUrl($assetIds: [ID!]!) {\n  assets(ids: $assetIds) {\n    public_url\n  }\n}",
+        "variables": "={{ {\n  assetIds: [ $json.assetId ]\n} }}",
+        "operationName": "GetAssetPublicUrl"
+      },
+      "id": "f4d683a4-ebd5-48ba-9eb3-f4f24cb20941",
+      "name": "Extraer url S3",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        3152,
+        1984
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Va2UdNK9bAomILML",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validamos que \"data\" y \"items\" estén definidos antes de acceder a \"column_values\"\nconst items = $json[\"data\"]?.[\"items\"] || [];  \n\n// Si no hay items, retornamos un array vacío con error\nif (items.length === 0) {\n  return [{ json: { error: \"No items found in the webhook data\" } }];\n}\n\n// Inicializamos un array para almacenar los archivos encontrados\nlet filesToDownload = [];\n\n// Iteramos sobre todos los items recibidos\nfor (let item of items) {\n  const columnValues = item[\"column_values\"] || [];\n\n  for (let col of columnValues) {\n    if (col.value) {\n      try {\n        // Parseamos el valor JSON de la columna\n        const parsedValue = JSON.parse(col.value);\n        const files = parsedValue.files || [];\n\n        // Agregamos cada archivo a la lista de archivos a descargar\n        files.forEach(file => {\n          filesToDownload.push({\n            json: {\n              assetId: file.assetId,\n              fileName: file.name\n            }\n          });\n        });\n      } catch (error) {\n        console.log(\"Error al parsear la columna 'file':\", error);\n      }\n    }\n  }\n}\n\n// Si no hay archivos para descargar, retornamos un mensaje\nif (filesToDownload.length === 0) {\n  return [{ json: { error: \"No files found in the columns\" } }];\n}\n\n// Devolvemos los archivos a n8n para su procesamiento posterior\nreturn filesToDownload;"
+      },
+      "id": "6ac4f0bd-1c62-4273-aab9-83da6f19cc97",
+      "name": "Extraer asset id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2848,
+        1760
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "endpoint": "https://api.monday.com/v2/",
+        "requestFormat": "json",
+        "query": "query GetItemColValue($itemIds: [ID!]!, $colIds: [String!]!) {\n  items(ids: $itemIds) {\n    column_values(ids: $colIds) {\n      id\n      value\n    }\n  }\n}",
+        "variables": "={{ {\n  itemIds: [ String($('Webhook1').item.json.body.event.pulseId) ],\n  colIds: [ 'file_mm1b99xs' ]\n} }}",
+        "operationName": "GetItemColValue",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "b1c2178c-2103-43a0-8886-eb6aa5abb170",
+      "name": "extraer file",
+      "type": "n8n-nodes-base.graphql",
+      "typeVersion": 1,
+      "position": [
+        2624,
+        2000
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Va2UdNK9bAomILML",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.monday.com/v2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "=Authorization",
+              "value": "=Bearer eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQzNTA4MjUxMSwiYWFpIjoxMSwidWlkIjo2MTE1OTA2NSwiaWFkIjoiMjAyNC0xMS0xMVQxNTo1Nzo1OC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTAyNzI0MTUsInJnbiI6InVzZTEifQ.h6ZArEjw5fm1VjmMlOvI0HpQEFoMNSzSc8C3U7t4Y-8"
+            },
+            {
+              "name": "=Content-Type",
+              "value": "=application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"query { items(ids: [\\\"{{ $('Webhook1').item.json.body.event.pulseId }}\\\"]) { column_values(ids: [\\\"tel_fono__1\\\", \\\"correo_electr_nico9__1\\\"]) { text } } }\"\n}\n\n\n\n",
+        "options": {}
+      },
+      "id": "92813091-25ae-4ac7-8984-bb4f89491e66",
+      "name": "co",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2672,
+        2272
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cb391e5b-eccb-4c7c-b257-047ae52aef13",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a2697563-0b2a-4993-990f-078e1015eb4f",
+      "name": "Webhook Parseur",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        3632,
+        2320
+      ],
+      "webhookId": "parseur-ticket-webhook",
+      "disabled": true,
+      "notes": "No usado en v3 (OpenAI). Solo si se vuelve a Parseur."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "secret-check",
+              "leftValue": "={{ $json.headers[\"x-parseur-secret\"] }}",
+              "rightValue": "xkdlRL9eu04j8zwlspE",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d22938eb-9182-4945-8f70-c9f06e27d8fc",
+      "name": "Validar Secreto",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3872,
+        2320
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"ok\": true, \"message\": \"Webhook recibido\"}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "e9105d0e-9010-4812-bfff-a4d991eac575",
+      "name": "Responder OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        4112,
+        2240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"ok\": false, \"message\": \"No autorizado\"}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "69d10499-4751-4135-bd4b-5d07d94b5c9d",
+      "name": "Responder 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        4112,
+        2448
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a9067d1f-d348-4ce9-b022-e528acfeaf5c",
+              "name": "challenge",
+              "value": "={{$json[\"body\"][\"challenge\"]}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb4337b8-ba7c-4404-84ce-df3946fb494e",
+      "name": "Edit Fields1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4144,
+        1440
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "5734482c-cbe9-4e10-a6fb-0d674a4f1aa6",
+      "name": "Respond to Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        4400,
+        1440
+      ],
+      "alwaysOutputData": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://10.10.12.33:9110/render-voucher-by-pulse?upload=1",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { pulse_id: String($json.monday_pulse_id || $json.body?.pulse_id || $json.body?.item_id || $json.body?.event?.pulseId || \"\") } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4672,
+        1440
+      ],
+      "id": "33c5631c-9bc5-4a5c-b3c9-4fb814058654",
+      "name": "Emitir Voucher PDF"
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "path": "emitir-vaucher-pdf/4f337a84-a4d1-4aca-adcc-6fc681c634f8",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "ec469d2c-182d-49ea-8f57-9b2b76cc04c4",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        3872,
+        1424
+      ],
+      "webhookId": "43c5c6d0-d4cd-4569-89f6-e6adb1bf0cf4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.monday.com/v2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjQzNTA4MjUxMSwiYWFpIjoxMSwidWlkIjo2MTE1OTA2NSwiaWFkIjoiMjAyNC0xMS0xMVQxNTo1Nzo1OC4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTAyNzI0MTUsInJnbiI6InVzZTEifQ.h6ZArEjw5fm1VjmMlOvI0HpQEFoMNSzSc8C3U7t4Y-8"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  query: \"mutation CreateSubitem($parentItemId: ID!, $itemName: String!, $columnValues: JSON!) { create_subitem(parent_item_id: $parentItemId, item_name: $itemName, column_values: $columnValues) { id board { id } } }\",\n  variables: {\n    parentItemId: String($('Extraer Datos').item.json.monday_pulse_id),\n    itemName: `${$json.segment_number || \"\"} - ${$json.flight_number || \"\"} - ${$json.origin_code || \"\"}/${$json.destination_code || \"\"}`,\n    columnValues: JSON.stringify(Object.fromEntries(Object.entries({\n      numeric_mm1bn62n: $json.segment_number ? Number($json.segment_number) : undefined,\n      date_mm1bdr4b: $json.voucher_heading_date ? { date: $json.voucher_heading_date } : undefined,\n      text_mm1b2khv: $json.voucher_heading_destination || '',\n      color_mm1bj7np: $json.voucher_trip_type ? { label: $json.voucher_trip_type } : undefined,\n      text_mm1bs18h: $json.flight_number || '',\n      text_mm1g7rg: $json.marketing_airline || '',\n      text_mm1bdzkw: $json.operated_by || '',\n      text_mm1ber8k: $json.origin_code || '',\n      text_mm1b7ra3: $json.origin_name || '',\n      text_mm1gaa33: $json.origin_city || '',\n      text_mm1byh8c: $json.origin_terminal || '',\n      text_mm1bc24j: $json.destination_code || '',\n      text_mm1bqsgh: $json.destination_name || '',\n      text_mm1gkxb5: $json.destination_city || '',\n      text_mm1b8xev: $json.destination_terminal || '',\n      date_mm1bhq59: $json.departure_date ? { date: $json.departure_date } : undefined,\n      text_mm1bggg: $json.departure_time || '',\n      date_mm1b8wej: $json.arrival_date ? { date: $json.arrival_date } : undefined,\n      text_mm1bhp08: $json.arrival_time || '',\n      text_mm1c8jse: $json.salida_llegada || '',\n      text_mm1bg1g3: $json.duration || '',\n      text_mm1bp2sm: $json.travel_class || '',\n      color_mm1b3vt0: $json.booking_status ? { label: ($json.booking_status === 'OK' ? 'Confirmado' : $json.booking_status) } : undefined,\n      text_mm1b9824: $json.baggage || '',\n      text_mm1bdxdz: $json.fare_basis || '',\n      text_mm1bevde: $json.ticket_number || '',\n      text_mm1bhvz6: $json.seat || '-',\n      long_text_mm1gwerx: ($json.seat_assignments && String($json.seat_assignments).trim()) ? { text: $json.seat_assignments } : undefined\n    }).filter(([_, v]) => v !== undefined)))\n  }\n} }}",
+        "options": {}
+      },
+      "id": "e2808d5a-6c11-43b4-b646-a5cf6127daba",
+      "name": "Crear Subitem Segmento GraphQL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5296,
+        2480
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "segments",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        5056,
+        2480
+      ],
+      "id": "ef68804d-9437-4720-95d2-35ddcd6625b3",
+      "name": "Split Out Segments"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "document_id",
+              "value": "={{ $json.body?.document_id || $json.document_id || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "monday_pulse_id",
+              "value": "={{ $json.body?.monday_pulse_id || $json.monday_pulse_id || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "monday_board_id",
+              "value": "={{ $json.body?.monday_board_id || $json.monday_board_id || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "passenger_name",
+              "value": "={{ $json.body?.passenger_name || $json.passenger_name || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "passenger_destination",
+              "value": "={{ $json.body?.passenger_destination || $json.passenger_destination || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "passengers",
+              "value": "={{ $json.body?.passengers || $json.passengers || [] }}",
+              "type": "array"
+            },
+            {
+              "name": "reservation_code",
+              "value": "={{ $json.body?.reservation_code || $json.reservation_code || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "ticket_number",
+              "value": "={{ $json.body?.ticket_number || $json.ticket_number || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "airline_main",
+              "value": "={{ $json.body?.airline_main || $json.airline_main || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "airlines_involved",
+              "value": "={{ $json.body?.airlines_involved || $json.airlines_involved || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "departure_date",
+              "value": "={{ $json.body?.departure_date || $json.departure_date || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "return_date",
+              "value": "={{ $json.body?.return_date || $json.return_date || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "segment_count",
+              "value": "={{ $json.body?.segment_count || $json.segment_count || \"\" }}",
+              "type": "string"
+            },
+            {
+              "name": "segments",
+              "value": "={{ $json.body?.segments || $json.segments || [] }}",
+              "type": "array"
+            },
+            {
+              "name": "full_payload",
+              "value": "={{ $json.body || $json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "451084a6-4dc9-4f60-adf0-4bd4b6e7bb8a",
+      "name": "Extraer Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4352,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nfunction asString(value) {\n  if (value == null) return '';\n  return String(value).trim();\n}\n\nfunction normalizeIataName(raw) {\n  const value = asString(raw)\n    .replace(/\\b(MR|MRS|MS|MISS|SR|SRA|DR|ADT|CHD|INF)\\b/gi, '')\n    .replace(/\\s+/g, ' ')\n    .trim();\n  if (!value) return '';\n  if (value.includes('/')) {\n    return value\n      .toUpperCase()\n      .replace(/[^A-Z0-9/]/g, '')\n      .replace(/\\/{2,}/g, '/');\n  }\n  const parts = value.split(' ').filter(Boolean);\n  if (parts.length === 1) return parts[0].toUpperCase();\n  const firstName = parts.slice(-2).join('').toUpperCase();\n  const lastName = parts.slice(0, Math.max(parts.length - 2, 1)).join('').toUpperCase();\n  return lastName && firstName ? lastName + '/' + firstName : value.toUpperCase().replace(/[^A-Z0-9/]/g, '');\n}\n\nfunction getPassengerFull(raw) {\n  if (!raw) return '';\n  if (typeof raw === 'string') {\n    try {\n      const parsed = JSON.parse(raw);\n      return parsed.full || raw;\n    } catch {\n      return raw;\n    }\n  }\n  if (typeof raw === 'object') {\n    return raw.full || [raw.first, raw.middle, raw.last].filter(Boolean).join(' ');\n  }\n  return String(raw);\n}\n\nfunction unique(values) {\n  const seen = new Set();\n  const out = [];\n  for (const raw of values) {\n    const value = asString(raw);\n    if (!value) continue;\n    const key = value.toUpperCase();\n    if (seen.has(key)) continue;\n    seen.add(key);\n    out.push(value);\n  }\n  return out;\n}\n\nconst payload = $json.full_payload || {};\nconst passengers = Array.isArray($json.passengers) ? $json.passengers : [];\nconst segments = Array.isArray($json.segments) ? $json.segments : [];\nconst reservationCode = asString($json.reservation_code);\nconst globalTicket = asString($json.ticket_number).replace(/\\s+/g, ' ').trim();\n\nif (!reservationCode) throw new Error('Parseur: falta reservation_code');\nif (!passengers.length) throw new Error('Parseur: faltan pasajeros');\nif (!segments.length) throw new Error('Parseur: faltan segmentos');\n\nconst normalizedPassengers = passengers.map((passenger, index) => {\n  const passengerFull = asString(getPassengerFull(passenger.passenger_name || passenger.name || ''));\n  const passengerVoucher = normalizeIataName(passenger.passenger_voucher || passengerFull);\n  const passengerTicket = asString(passenger.ticket_number || globalTicket).replace(/\\s+/g, ' ').trim();\n  return {\n    passenger_number: passenger.passenger_number || index + 1,\n    passenger_name: passengerFull,\n    passenger_voucher: passengerVoucher,\n    passenger_type: asString(passenger.passenger_type || 'ADT'),\n    ticket_number: passengerTicket,\n  };\n});\n\nconst ticketCount = normalizedPassengers.filter((p) => p.ticket_number).length;\nif (normalizedPassengers.length > 1 && ticketCount < normalizedPassengers.length && !globalTicket) {\n  throw new Error('Parseur: hay mas pasajeros que tickets utilizables');\n}\n\nconst normalizedSegments = segments.map((segment, index) => {\n  const departureDate = asString(segment.departure_date);\n  const departureTime = asString(segment.departure_time || '00:00');\n  const arrivalDate = asString(segment.arrival_date);\n  const arrivalTime = asString(segment.arrival_time || '00:00');\n  if (departureDate && arrivalDate) {\n    const dep = new Date(departureDate + 'T' + departureTime.slice(0, 5));\n    const arr = new Date(arrivalDate + 'T' + arrivalTime.slice(0, 5));\n    if (!Number.isNaN(dep.getTime()) && !Number.isNaN(arr.getTime()) && arr.getTime() < dep.getTime()) {\n      throw new Error('Parseur: fechas u horas imposibles en segmento ' + (segment.segment_number || index + 1));\n    }\n  }\n  const marketingAirline = asString(segment.marketing_airline || segment.operated_by || payload.airline_main);\n  const operatedBy = asString(segment.operated_by || marketingAirline || payload.airline_main);\n  return {\n    ...segment,\n    segment_number: segment.segment_number || index + 1,\n    marketing_airline: marketingAirline,\n    operated_by: operatedBy,\n    ticket_number: asString(segment.ticket_number || globalTicket),\n    seat: asString(segment.seat || '-'),\n    seat_assignments: asString(segment.seat_assignments || ''),\n    booking_status: asString(segment.booking_status || payload.booking_status || ''),\n    salida_llegada: [\n      asString(segment.origin_code),\n      departureDate,\n      departureTime,\n      '->',\n      asString(segment.destination_code),\n      arrivalDate,\n      arrivalTime,\n    ].filter(Boolean).join(' '),\n  };\n});\n\nconst airlinesInvolvedList = unique([\n  ...(Array.isArray(payload.airlines_involved) ? payload.airlines_involved : asString($json.airlines_involved).split(/[\\n,;]+/)),\n  payload.airline_main,\n  ...normalizedSegments.flatMap((segment) => [segment.marketing_airline, segment.operated_by]),\n]);\n\nconst formattedPassengersList = normalizedPassengers\n  .map((passenger) => passenger.ticket_number ? passenger.passenger_voucher + ' - ' + passenger.ticket_number : passenger.passenger_voucher)\n  .filter(Boolean)\n  .join('\\n');\n\nconst primaryPassenger = normalizedPassengers[0] || {};\nconst extras = [\n  'PRESENTARSE EN AEROPUERTO CON TIEMPO SUFICIENTE PARA CHECK-IN Y SEGURIDAD.',\n  'VALIDAR REQUISITOS MIGRATORIOS, VISA Y VIGENCIA MINIMA DEL PASAPORTE.',\n  'REVISAR POLITICAS DE CAMBIO, CANCELACION Y EQUIPAJE ANTES DEL VIAJE.',\n];\nconst agencyPhone = asString(payload.agency_phone || payload.agency_emergency_phone || payload.telefono_agencia || '849-919-1919');\nif (agencyPhone) extras.push('EN CASO DE EMERGENCIA CONTACTAR A LA AGENCIA AL ' + agencyPhone + '.');\n\nreturn [{\n  json: {\n    ...$json,\n    passengers: normalizedPassengers,\n    passenger_full_name: primaryPassenger.passenger_name || asString(getPassengerFull(payload.passenger_name || '')),\n    passenger_voucher_primary: primaryPassenger.passenger_voucher || normalizeIataName(primaryPassenger.passenger_name || payload.passenger_name || ''),\n    primary_ticket_number: primaryPassenger.ticket_number || globalTicket,\n    formatted_passengers_list: formattedPassengersList,\n    airlines_involved_list: airlinesInvolvedList,\n    airlines_involved_text: airlinesInvolvedList.join('\\n'),\n    extras_text: extras.join('\\n'),\n    segments: normalizedSegments,\n    full_payload: {\n      ...payload,\n      passengers: normalizedPassengers,\n      segments: normalizedSegments,\n      airlines_involved: airlinesInvolvedList,\n    }\n  }\n}];"
+      },
+      "id": "5bb37017-eb23-42a9-87b5-d167d64488a0",
+      "name": "Formatear Lista Pasajeros",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4560,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "boardItem",
+        "operation": "changeMultipleColumnValues",
+        "boardId": "18403483965",
+        "itemId": "={{ $json.monday_pulse_id }}",
+        "columnValues": "={{ JSON.stringify(Object.fromEntries(Object.entries({\n  \"text_mm1b9vf3\": $json.passenger_full_name || \"\",\n  \"text_mm1gwg6h\": $json.passenger_voucher_primary || \"\",\n  \"text_mm1b1b5w\": $json.reservation_code || \"\",\n  \"text_mm1bq9bc\": ($json.primary_ticket_number || \"\").replace(/\\s+/g, \" \").trim(),\n  \"text_mm1b4mb1\": $json.airline_main || $json.full_payload?.airline_main || \"\",\n  \"long_text_mm1g71j8\": $json.airlines_involved_text || \"\",\n  \"text_mm1gtmbn\": $json.full_payload?.agency_name || \"\",\n  \"text_mm1gtmpz\": $json.full_payload?.issuing_office || \"\",\n  \"text_mm1g288g\": $json.full_payload?.currency || \"\",\n  \"date_mm1bw16n\": $json.full_payload?.issue_date ? { \"date\": $json.full_payload.issue_date } : undefined,\n  \"text_mm1b8rv7\": $json.full_payload?.origin_main_code || \"\",\n  \"text_mm1bxfa3\": $json.full_payload?.destination_final_code || \"\",\n  \"text_mm1cd796\": $json.passenger_destination || \"\",\n  \"long_text_mm1bpk6w\": $json.full_payload?.route_summary || \"\",\n  \"date_mm1bshfd\": $json.departure_date ? { \"date\": $json.departure_date } : undefined,\n  \"date_mm1bqrzy\": $json.return_date ? { \"date\": $json.return_date } : undefined,\n  \"color_mm1b30rv\": $json.full_payload?.trip_type ? { \"label\": $json.full_payload.trip_type } : undefined,\n  \"numeric_mm1bhwn0\": $json.segment_count ? Number($json.segment_count) : undefined,\n  \"text_mm1b7ycn\": $json.full_payload?.travel_class || \"\",\n  \"text_mm1bk9hf\": $json.full_payload?.baggage_allowance || \"\",\n  \"text_mm1bacys\": $json.full_payload?.fare_basis || \"\",\n  \"color_mm1b1pjr\": $json.full_payload?.booking_status ? { \"label\": ($json.full_payload.booking_status === \"OK\" ? \"Confirmada\" : $json.full_payload.booking_status) } : undefined,\n  \"long_text_mm1c70w4\": $json.formatted_passengers_list || \"\",\n  \"long_text_mm1gq119\": $json.extras_text || \"\",\n  \"color_mm1by1dx\": { \"label\": \"Procesado\" },\n  \"text_mm1b1eh\": $json.document_id || \"\"\n}).filter(([_, v]) => v !== undefined))) }}"
+      },
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        4832,
+        2224
+      ],
+      "id": "92bbcc1f-2fba-4b4f-bab1-cc680c7281e7",
+      "name": "Mapear Parseur a Monday",
+      "credentials": {
+        "mondayComApi": {
+          "id": "UmWLd4GnGsxkmqeX",
+          "name": "grupo jyl"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "last-segment-check",
+              "leftValue": "={{ Number($json.segment_number || 0) }}",
+              "rightValue": "={{ Number($(\"Extraer Datos\").item.json.segment_count || 0) }}",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1a5f7b4a-846e-4b26-9ecf-a0c88f8b3f31",
+      "name": "Es Último Segmento",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5536,
+        2480
+      ]
+    }
+  ],
+  "pinData": {
+    "Webhook Parseur": [
+      {
+        "json": {
+          "headers": {
+            "connection": "keep-alive",
+            "host": "n8n.grupojyl.com",
+            "x-forwarded-scheme": "http",
+            "x-forwarded-proto": "http",
+            "x-forwarded-for": "35.204.12.29, 10.10.12.33",
+            "x-real-ip": "10.10.12.33",
+            "content-length": "3827",
+            "user-agent": "python-requests/2.32.5",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "baggage": "sentry-trace_id=4d4857a2efd8462bb5e571d965528e7e,sentry-sample_rand=0.082215,sentry-environment=production,sentry-public_key=29b9384c2090405bbc7df6164506abb9,sentry-transaction=/parser/%7Bparser_id%7D/upload,sentry-sample_rate=0.0,sentry-sampled=false",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "35.204.12.29",
+            "cf-ipcountry": "NL",
+            "cf-ray": "9dac066f2c1dab40-AMS",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-warp-tag-id": "033337dd-fd9d-4542-80ca-7780b666c0aa",
+            "content-type": "application/json; charset=utf-8",
+            "sentry-trace": "4d4857a2efd8462bb5e571d965528e7e-aa81fc6b24aed606-0",
+            "x-parseur-event": "document.processed",
+            "x-parseur-secret": "xkdlRL9eu04j8zwlspE"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "monday_pulse_id": "11482380201",
+            "passenger_name": {
+              "title": "",
+              "first": "De",
+              "middle": "Oleo Reyes Francis Willys",
+              "last": "Mr",
+              "full": "De Oleo Reyes Francis Willys Mr (ADT)"
+            },
+            "reservation_code": "8ZTDP5",
+            "ticket_number": "996 2426250502",
+            "airline_main": "AIR EUROPA",
+            "issue_date": "2026-03-07",
+            "origin_main_code": "SDQ",
+            "destination_final_code": "SDQ",
+            "route_summary": "SDQ-MAD-LON-MAD-SDQ",
+            "departure_date": "2026-03-11",
+            "return_date": "2026-03-29",
+            "trip_type": "Multiciudad",
+            "segment_count": 4,
+            "travel_class": "ECONOMY",
+            "baggage_allowance": "1PC",
+            "fare_basis": "VLYRAE",
+            "booking_status": "OK",
+            "agency_name": "WEB AIR EUROPA",
+            "issuing_office": "WEB AIR EUROPA, TBA, SANTO DOMINGO",
+            "segments": [
+              {
+                "baggage": "1PC",
+                "duration": "08:05",
+                "fare_basis": "VLYRAE",
+                "operated_by": "AIR EUROPA",
+                "origin_code": "SDQ",
+                "origin_name": "SANTO DOMINGO LAS AMERICAS INTL",
+                "arrival_date": "2026-03-12",
+                "arrival_time": "11:55:00",
+                "travel_class": "ECONOMY, V",
+                "flight_number": "UX88",
+                "ticket_number": "996 2426250502",
+                "booking_status": "OK",
+                "departure_date": "2026-03-11",
+                "departure_time": "22:50:00",
+                "segment_number": 1,
+                "destination_code": "MAD",
+                "destination_name": "MADRID ADOLFO SUAREZ BARAJAS",
+                "voucher_trip_type": "Salida",
+                "destination_terminal": "1",
+                "voucher_heading_date": "2026-03-11",
+                "voucher_heading_destination": "MADRID ADOLFO SUAREZ BARAJAS"
+              },
+              {
+                "baggage": "1PC",
+                "duration": "02:25",
+                "fare_basis": "VLYRAE",
+                "operated_by": "AIR EUROPA",
+                "origin_code": "MAD",
+                "origin_name": "MADRID ADOLFO SUAREZ BARAJAS",
+                "arrival_date": "2026-03-12",
+                "arrival_time": "16:25:00",
+                "travel_class": "ECONOMY, V",
+                "flight_number": "UX1015",
+                "ticket_number": "996 2426250502",
+                "booking_status": "OK",
+                "departure_date": "2026-03-12",
+                "departure_time": "15:00:00",
+                "segment_number": 2,
+                "origin_terminal": "1",
+                "destination_code": "LGW",
+                "destination_name": "LONDON GATWICK",
+                "voucher_trip_type": "Conexión",
+                "destination_terminal": "S",
+                "voucher_heading_date": "2026-03-12",
+                "voucher_heading_destination": "LONDON GATWICK"
+              },
+              {
+                "operated_by": "AIR EUROPA",
+                "origin_code": "LGW",
+                "origin_name": "LONDON GATWICK",
+                "arrival_date": "2026-03-17",
+                "arrival_time": "13:30:00",
+                "travel_class": "ECONOMY, V",
+                "flight_number": "UX1014",
+                "ticket_number": "996 2426250502",
+                "departure_date": "2026-03-17",
+                "departure_time": "10:00:00",
+                "segment_number": 3,
+                "origin_terminal": "S",
+                "destination_code": "MAD",
+                "destination_name": "MADRID ADOLFO SUAREZ BARAJAS",
+                "voucher_trip_type": "Retorno",
+                "destination_terminal": "1",
+                "voucher_heading_date": "2026-03-17",
+                "voucher_heading_destination": "MADRID ADOLFO SUAREZ BARAJAS"
+              },
+              {
+                "baggage": "1PC",
+                "duration": "02:30",
+                "fare_basis": "VLYRAE",
+                "operated_by": "AIR EUROPA",
+                "origin_code": "MAD",
+                "origin_name": "MADRID ADOLFO SUAREZ BARAJAS",
+                "arrival_date": "2026-03-29",
+                "arrival_time": "18:50:00",
+                "travel_class": "ECONOMY, V",
+                "flight_number": "UX89",
+                "booking_status": "OK",
+                "departure_date": "2026-03-29",
+                "departure_time": "16:10:00",
+                "segment_number": 1,
+                "origin_terminal": "1",
+                "destination_code": "SDQ",
+                "destination_name": "SANTO DOMINGO LAS AMERICAS INTL",
+                "voucher_trip_type": "Salida",
+                "voucher_heading_date": "2026-03-29",
+                "voucher_heading_destination": "SANTO DOMINGO"
+              },
+              {
+                "baggage": "1PC",
+                "duration": "08:40",
+                "fare_basis": "VLYRAE",
+                "operated_by": "AIR EUROPA",
+                "origin_code": "SDQ",
+                "origin_name": "SANTO DOMINGO LAS AMERICAS INTL",
+                "arrival_date": "2026-03-29",
+                "arrival_time": "18:50:00",
+                "travel_class": "ECONOMY, V",
+                "flight_number": "UX89",
+                "booking_status": "OK",
+                "departure_date": "2026-03-29",
+                "departure_time": "16:10:00",
+                "segment_number": 2,
+                "destination_code": "MAD",
+                "destination_name": "MADRID ADOLFO SUAREZ BARAJAS",
+                "voucher_trip_type": "Retorno",
+                "voucher_heading_date": "2026-03-29",
+                "voucher_heading_destination": "SANTO DOMINGO"
+              }
+            ]
+          },
+          "webhookUrl": "https://n8n.grupojyl.com/webhook/cb391e5b-eccb-4c7c-b257-047ae52aef13",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "connection": "keep-alive",
+            "host": "n8n.grupojyl.com",
+            "x-forwarded-scheme": "http",
+            "x-forwarded-proto": "http",
+            "x-forwarded-for": "185.237.4.2, 10.10.12.33",
+            "x-real-ip": "10.10.12.33",
+            "content-length": "760",
+            "user-agent": "node-fetch/1.0 (+https://github.com/bitinn/node-fetch)",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "185.237.4.2",
+            "cf-ipcountry": "US",
+            "cf-ray": "9dd658787e5bd6ed-IAD",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-warp-tag-id": "9dd9a47e-8514-4c46-b1c5-f9b0749c07db",
+            "content-type": "application/json",
+            "traceparent": "00-9245c3f6a627bd93515490cae3725e28-78ba416fc57e14db-01",
+            "x-request-start": "1773691242250"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": {
+              "app": "monday",
+              "type": "update_column_value",
+              "triggerTime": "2026-03-16T20:00:41.743Z",
+              "subscriptionId": 681344594,
+              "isRetry": false,
+              "userId": 61159065,
+              "originalTriggerUuid": null,
+              "boardId": 18403483965,
+              "groupId": "group_mm1bahwb",
+              "pulseId": 11519946712,
+              "pulseName": "DIAZ CONTRERAS 2",
+              "columnId": "color_mm1ch8t3",
+              "columnType": "color",
+              "columnTitle": "Generar Vaucher",
+              "value": {
+                "label": {
+                  "index": 1,
+                  "text": "Creado",
+                  "style": {
+                    "color": "#00c875",
+                    "border": "#00b461",
+                    "var_name": "green-shadow"
+                  },
+                  "is_done": true
+                },
+                "post_id": null
+              },
+              "previousValue": {
+                "label": {
+                  "index": 5,
+                  "text": null,
+                  "style": {
+                    "color": "#c4c4c4",
+                    "border": "#b0b0b0",
+                    "var_name": "grey"
+                  },
+                  "is_done": false
+                },
+                "post_id": null
+              },
+              "changedAt": 1773691231.0479972,
+              "isTopGroup": true,
+              "triggerUuid": "f94c071f4a743de738df26175c939bc4"
+            }
+          },
+          "webhookUrl": "https://n8n.grupojyl.com/webhook/emitir-vaucher-pdf/4f337a84-a4d1-4aca-adcc-6fc681c634f8",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0,
+          "input": 1
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "extraer file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar PDF Monday": {
+      "main": [
+        [
+          {
+            "node": "Extraer con OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "URL Archivo": {
+      "main": [
+        [
+          {
+            "node": "Descargar PDF Monday",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer url S3": {
+      "main": [
+        [
+          {
+            "node": "URL Archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer asset id": {
+      "main": [
+        [
+          {
+            "node": "Extraer url S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extraer file": {
+      "main": [
+        [
+          {
+            "node": "Extraer asset id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Parseur": {
+      "main": [
+        [
+          {
+            "node": "Validar Secreto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer con OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Extraer Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Secreto": {
+      "main": [
+        [
+          {
+            "node": "Responder OK",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extraer Datos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Emitir Voucher PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Emitir Voucher PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out Segments": {
+      "main": [
+        [
+          {
+            "node": "Crear Subitem Segmento GraphQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Datos": {
+      "main": [
+        [
+          {
+            "node": "Formatear Lista Pasajeros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear Lista Pasajeros": {
+      "main": [
+        [
+          {
+            "node": "Mapear Parseur a Monday",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split Out Segments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Subitem Segmento GraphQL": {
+      "main": [
+        [
+          {
+            "node": "Es Último Segmento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es Último Segmento": {
+      "main": [
+        [
+          {
+            "node": "Emitir Voucher PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true
+  },
+  "versionId": "4fa42229-0c7d-4e9a-a0c0-9438fa152493",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a2233cec53590be9bbfc7cb25e57092633f32da2135e5b6a8755574ef72a82a8"
+  },
+  "id": "UJXlRR7kDFP5xIEYlJyap",
+  "tags": [
+    {
+      "updatedAt": "2025-04-26T02:36:34.514Z",
+      "createdAt": "2025-04-26T02:36:34.514Z",
+      "id": "Ib3kLeYBMXfXiZLv",
+      "name": "JYL CONSULTORES"
+    }
+  ]
+}

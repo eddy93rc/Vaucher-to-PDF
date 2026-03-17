@@ -1,0 +1,40 @@
+# Auto-voucher: PDF Extractor (OpenAI) + Vaucher-to-PDF
+#
+# Uso:
+#   docker compose up -d pdf-extractor   # solo extractor
+#   docker compose up -d                 # todos los servicios
+#
+# Variables: crear .env con OPENAI_API_KEY, MONDAY_API_TOKEN, etc.
+
+services:
+  pdf-extractor:
+    build: ./pdf-extractor
+    ports:
+      - "9120:9120"
+    environment:
+      - PORT=9120
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+      - UPLOAD_DIR=/tmp/pdf-extractor
+    volumes:
+      - pdf-extractor-tmp:/tmp/pdf-extractor
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:9120/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Vaucher-to-PDF (genera el PDF del voucher desde datos Monday)
+  vaucher-to-pdf:
+    build: ./Vaucher-to-PDF
+    ports:
+      - "9110:9110"
+    environment:
+      - PORT=9110
+      - MONDAY_API_KEY=${MONDAY_API_TOKEN}
+      - MONDAY_BOARD_ID=${MONDAY_BOARD_ID:-18403483965}
+    profiles:
+      - full
+
+volumes:
+  pdf-extractor-tmp:

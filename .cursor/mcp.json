@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+      "n8n-mcp": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "supergateway",
+          "--streamableHttp",
+          "https://n8n.grupojyl.com/mcp-server/http",
+          "--header",
+          "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MjgyYWMyNy1hMjk2LTQ3NTQtYTcwYi1iNzgzM2E2NmNiZGQiLCJpc3MiOiJuOG4iLCJhdWQiOiJtY3Atc2VydmVyLWFwaSIsImp0aSI6ImQxYWM5NjIxLTdmNjQtNDY5NS1iMGU3LWRkNjgwODI5ZTI5ZSIsImlhdCI6MTc3MzMzNzI0M30.h9L9bvC_PCWAA7U_pF890Rn-hFT44IxBbadyuKttJkY"
+        ]
+      }
+    }
+  }

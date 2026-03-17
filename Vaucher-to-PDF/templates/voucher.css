@@ -1,0 +1,413 @@
+@page { size: A4; margin: 14mm; }
+
+:root {
+  --ink: #1a1a1a;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --paper: #ffffff;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --orange: #ea580c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.voucher-shell { position: relative; z-index: 1; }
+
+/* Header: logo + agency */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  max-width: 90px;
+  max-height: 40px;
+  object-fit: contain;
+}
+
+.brand { display: flex; flex-direction: column; }
+
+.agency-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.agency-tagline {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.airline-logo {
+  max-width: 100px;
+  max-height: 32px;
+  object-fit: contain;
+}
+
+/* Fecha y destino */
+.header-route {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.preparado-para {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.passenger-names {
+  margin-bottom: 10px;
+}
+
+.passenger-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.03em;
+}
+
+.reservation-row {
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.reservation-label { color: var(--muted); }
+.reservation-code {
+  background: #fef08a;
+  padding: 2px 6px;
+  margin-left: 6px;
+}
+
+.airline-row {
+  font-size: 11px;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.sep {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0 0 12px 0;
+}
+
+.salida-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-size: 12px;
+}
+
+.plane-icon {
+  font-size: 14px;
+  color: var(--accent);
+}
+
+/* Caja itinerario */
+.itinerary-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 18px;
+  background: #fafafa;
+}
+
+.itinerary-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f3f4f6;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.section-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.route-short {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.plane-mini {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.date-duration {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.duration-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Timeline vertical */
+.timeline {
+  padding: 16px 16px 20px 32px;
+  position: relative;
+}
+
+.timeline-node {
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.timeline-node:last-child { padding-bottom: 0; }
+
+.timeline-dot {
+  position: absolute;
+  left: -22px;
+  top: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.timeline-content { margin-left: 0; }
+
+.city-block {
+  margin-bottom: 10px;
+}
+
+.city-block .city-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.airport-info {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.flight-block {
+  margin: 10px 0 14px 0;
+}
+
+.flight-info {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.time-block {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.time-depart,
+.time-arrive {
+  min-width: 80px;
+}
+
+.date-line {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.time-line {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.time-line sup {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.code-line {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.duration-connector {
+  flex: 1;
+  min-width: 60px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.duration-connector::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--line);
+}
+
+.duration-text {
+  position: relative;
+  z-index: 1;
+  background: #fafafa;
+  padding: 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.layover-block {
+  margin: 14px 0;
+  padding: 10px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.layover-block .city-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.layover-block .airport-info {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.layover-text {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.final-dest {
+  margin-top: 10px;
+}
+
+/* Tabla pasajeros */
+.passenger-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 18px;
+}
+
+.passenger-table th,
+.passenger-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 11px;
+}
+
+.passenger-table th {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.passenger-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.passenger-table td:first-child {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Extras */
+.extras-section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 18px;
+  background: #fafafa;
+}
+
+.extras-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.extras-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.extras-list li {
+  margin-bottom: 6px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.emergency-phone {
+  margin-top: 12px;
+  font-size: 11px;
+}
+
+.emergency-phone strong {
+  color: var(--accent);
+}
+
+.watermark {
+  position: fixed;
+  right: 14mm;
+  bottom: 14mm;
+  opacity: 0.05;
+  z-index: 0;
+}
+
+.watermark img {
+  max-width: 170px;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .itinerary-box,
+  .passenger-table,
+  .extras-section {
+    break-inside: avoid;
+  }
+}

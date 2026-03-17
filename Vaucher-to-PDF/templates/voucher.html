@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voucher Aéreo</title>
+  <style>{{{cssContent}}}</style>
+</head>
+<body>
+  <div class="watermark">{{#if watermarkUrl}}<img src="{{watermarkUrl}}" alt="">{{/if}}</div>
+  <main class="voucher-shell">
+    <header class="header-top">
+      <div class="header-left">
+        {{#if logoUrl}}<img src="{{logoUrl}}" alt="logo" class="logo">{{/if}}
+        <div class="brand">
+          <div class="agency-name">{{agencyName}}</div>
+          <div class="agency-tagline">{{agencyTagline}}</div>
+        </div>
+      </div>
+      {{#if airlineLogoUrl}}<img src="{{airlineLogoUrl}}" alt="" class="airline-logo">{{/if}}
+    </header>
+
+    <div class="header-route">{{headerDateDest}}</div>
+    <div class="preparado-para">PREPARADO PARA</div>
+    <div class="passenger-names">
+      {{#each passengerNamesList}}
+        <div class="passenger-name">{{this}}</div>
+      {{/each}}
+    </div>
+    <div class="reservation-row">
+      <span class="reservation-label">CÓDIGO DE RESERVACIÓN:</span>
+      <strong class="reservation-code">{{reservationCode}}</strong>
+    </div>
+    <div class="airline-row">AEROLINEA: {{airlineMain}}</div>
+
+    <hr class="sep">
+
+    <div class="salida-row">
+      <span class="plane-icon">✈</span>
+      <strong>SALIDA: {{departureDateFull}}</strong>
+    </div>
+
+    {{#each timelineSections}}
+    <section class="itinerary-box">
+      <div class="itinerary-header">
+        <span class="section-label">{{title}}</span>
+        <span class="route-short">{{originCity}}</span>
+        <span class="plane-mini">✈</span>
+        <span class="route-short">{{destinationCity}}</span>
+        <span class="date-duration">{{dateShort}}</span>
+        <span class="duration-label">Duración: {{totalDuration}}</span>
+      </div>
+
+      <div class="timeline">
+        {{#each segments}}
+        <div class="timeline-node">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            {{#if @first}}
+            <div class="city-block">
+              <strong class="city-name">{{originCity}}</strong>
+              <span class="airport-info">{{originAirportFull}}</span>
+            </div>
+            {{/if}}
+
+            <div class="flight-block">
+              <div class="flight-info">{{flightInfo}}</div>
+              <div class="time-block">
+                <div class="time-depart">
+                  <div class="date-line">{{departureDateShort}}</div>
+                  <div class="time-line">{{departureTime}}</div>
+                  <div class="code-line">{{departureCode}}</div>
+                </div>
+                <div class="duration-connector">
+                  <span class="duration-text">{{durationDisplay}}</span>
+                </div>
+                <div class="time-arrive">
+                  <div class="date-line">{{arrivalDateShort}}</div>
+                  <div class="time-line">{{arrivalTime}}{{#if arrivalPlus1}}<sup>-1</sup>{{/if}}</div>
+                  <div class="code-line">{{arrivalCode}}</div>
+                </div>
+              </div>
+            </div>
+
+            {{#if layoverAfter}}
+            <div class="layover-block">
+              <strong class="city-name">{{destinationCity}}</strong>
+              <span class="airport-info">{{destinationAirportFull}}</span>
+              <span class="layover-text">{{layoverAfter}}</span>
+            </div>
+            {{else}}
+            {{#if @last}}
+            <div class="city-block final-dest">
+              <strong class="city-name">{{destinationCity}}</strong>
+              <span class="airport-info">{{destinationAirportFull}}</span>
+            </div>
+            {{/if}}
+            {{/if}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </section>
+    {{/each}}
+
+    <table class="passenger-table">
+      <thead>
+        <tr>
+          <th>PASAJERO</th>
+          <th>ASIENTO</th>
+          <th>TICKET NO.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each passengersFooter}}
+        <tr>
+          <td>{{nameTableDisplay}}</td>
+          <td>{{seatsAggregated}}</td>
+          <td>{{#if ticketNumberDisplay}}{{ticketNumberDisplay}}{{else}}—{{/if}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    {{#if extras}}
+    <section class="extras-section">
+      <div class="extras-title">Información adicional</div>
+      <ul class="extras-list">
+        {{#each extras}}
+        <li>{{this}}</li>
+        {{/each}}
+      </ul>
+      {{#if agencyEmergencyPhone}}
+      <div class="emergency-phone">En caso de emergencia: <strong>{{agencyEmergencyPhone}}</strong></div>
+      {{/if}}
+    </section>
+    {{/if}}
+  </main>
+</body>
+</html>

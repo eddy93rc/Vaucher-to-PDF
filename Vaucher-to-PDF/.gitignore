@@ -1,0 +1,10 @@
+node_modules
+dist
+output/*.pdf
+.env
+*.log
+.DS_Store
+monday-column-mapping.json
+test-ticket.pdf
+render-voucher-by-pulse*
+VOUCHER\ BOLETO*.pdf
